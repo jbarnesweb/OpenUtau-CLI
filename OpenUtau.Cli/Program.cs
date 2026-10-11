@@ -5,7 +5,7 @@ namespace OpenUtau.Cli;
 internal static class Program {
     private const int ExitSuccess = 0;
     private const int ExitInvalidArguments = 1;
-    private const int ExitRenderNotImplemented = 2;
+    private const int ExitRenderFailed = 2;
 
     private static async Task<int> Main(string[] args) {
         if (args.Length == 1 && args[0] == "--help") {
@@ -25,42 +25,21 @@ internal static class Program {
     }
 
     private static async Task<int> RunRender(string[] args) {
-        if (args.Length < 2) {
-            return Invalid("Missing input .ustx path.");
-        }
-
-        var inputPath = args[1];
-        if (!inputPath.EndsWith(".ustx", StringComparison.OrdinalIgnoreCase)) {
-            return Invalid("Input path must end with .ustx.");
-        }
-
-        if (args.Length < 3) {
-            return Invalid("Missing --out option.");
-        }
-
-        if (args[2] != "--out") {
-            return Invalid("Expected --out option after input path.");
-        }
-
-        if (args.Length < 4) {
-            return Invalid("Missing output .wav path.");
-        }
-
-        var outputPath = args[3];
-        if (!outputPath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)) {
-            return Invalid("Output path must end with .wav.");
-        }
-
-        if (args.Length > 4) {
-            return Invalid("Unexpected extra arguments.");
+        if (!RenderArguments.TryParse(args, out var renderArguments, out var error)) {
+            return Invalid(error);
         }
 
         var headlessRenderService = new HeadlessRenderService();
         try {
-            await headlessRenderService.RenderMixdownAsync(inputPath, outputPath);
-        } catch (NotImplementedException ex) {
-            Console.Error.WriteLine(ex.Message);
-            return ExitRenderNotImplemented;
+            await headlessRenderService.RenderMixdownAsync(
+                renderArguments.InputPath,
+                renderArguments.OutputPath);
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            if (ex.InnerException != null) {
+                Console.Error.WriteLine(ex.InnerException.Message);
+            }
+            return ExitRenderFailed;
         }
 
         return ExitSuccess;
@@ -76,5 +55,46 @@ internal static class Program {
         writer.WriteLine("Usage:");
         writer.WriteLine("  openutau-cli --help");
         writer.WriteLine("  openutau-cli render <input.ustx> --out <output.wav>");
+    }
+}
+
+internal sealed record RenderArguments(string InputPath, string OutputPath) {
+    public static bool TryParse(
+        string[] args,
+        out RenderArguments? renderArguments,
+        out string error) {
+        renderArguments = null;
+        if (args.Length < 2) {
+            error = "Missing input .ustx path.";
+            return false;
+        }
+        if (!args[1].EndsWith(".ustx", StringComparison.OrdinalIgnoreCase)) {
+            error = "Input path must end with .ustx.";
+            return false;
+        }
+        if (args.Length < 3) {
+            error = "Missing --out option.";
+            return false;
+        }
+        if (args[2] != "--out") {
+            error = "Expected --out option after input path.";
+            return false;
+        }
+        if (args.Length < 4) {
+            error = "Missing output .wav path.";
+            return false;
+        }
+        if (!args[3].EndsWith(".wav", StringComparison.OrdinalIgnoreCase)) {
+            error = "Output path must end with .wav.";
+            return false;
+        }
+        if (args.Length > 4) {
+            error = "Unexpected extra arguments.";
+            return false;
+        }
+
+        renderArguments = new RenderArguments(args[1], args[3]);
+        error = string.Empty;
+        return true;
     }
 }

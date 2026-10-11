@@ -48,7 +48,11 @@ namespace OpenUtau.Core.Format {
         /// Read project from files to a new UProject object, used by LoadProject and ImportTracks.
         /// </summary>
         /// <param name="files">Names of the files to be loaded</param>
-        public static UProject? ReadProject(string[] files){
+        public static UProject? ReadProject(string[] files) {
+            return ReadProject(files, validate: true);
+        }
+
+        internal static UProject? ReadProject(string[] files, bool validate) {
             if (files.Length < 1) {
                 return null;
             }
@@ -56,7 +60,7 @@ namespace OpenUtau.Core.Format {
             UProject? project = null;
             switch (format) {
                 case ProjectFormats.Ustx:
-                    project = Ustx.Load(files[0]);
+                    project = Ustx.Load(files[0], validate);
                     break;
                 case ProjectFormats.Vsq3:
                 case ProjectFormats.Vsq4:

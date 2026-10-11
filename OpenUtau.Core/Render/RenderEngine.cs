@@ -56,8 +56,12 @@ namespace OpenUtau.Core.Render {
         }
 
         // for playback or export
-        public Tuple<WaveMix, List<Fader>> RenderMixdown(TaskScheduler uiScheduler, ref CancellationTokenSource cancellation, bool wait = false) {
-            var newCancellation = new CancellationTokenSource();
+        public Tuple<WaveMix, List<Fader>> RenderMixdown(
+            TaskScheduler uiScheduler,
+            ref CancellationTokenSource cancellation,
+            bool wait = false,
+            CancellationToken cancellationToken = default) {
+            var newCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var oldCancellation = Interlocked.Exchange(ref cancellation, newCancellation);
             if (oldCancellation != null) {
                 oldCancellation.Cancel();

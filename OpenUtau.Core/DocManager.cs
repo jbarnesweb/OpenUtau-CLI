@@ -55,6 +55,10 @@ namespace OpenUtau.Core {
             PhonemizerRunner = new PhonemizerRunner(mainScheduler);
         }
 
+        internal void SetProject(UProject project) {
+            Project = project;
+        }
+
         public void SearchAllLegacyPlugins() {
             try {
                 var stopWatch = Stopwatch.StartNew();
